@@ -6,6 +6,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&family=Source+Serif+4:ital@1&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
 <style>
   :root{
     --bg:#100D0A;
@@ -53,6 +55,9 @@
   .quote-card{background:linear-gradient(135deg,var(--surface-2),var(--surface));border:1px solid var(--line);border-radius:14px;padding:20px;margin-bottom:16px;position:relative;}
   .quote-card .q{font-family:var(--font-serif);font-style:italic;font-size:17px;line-height:1.5;color:var(--text);}
   .quote-card .src{margin-top:8px;font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:1px;}
+  .gps-map{height:260px;border-radius:12px;overflow:hidden;margin-top:12px;background:var(--surface-2);}
+  .mini-map{height:180px;margin-top:10px;}
+  .leaflet-control-attribution{font-size:9px !important;}
 
   .bar-row{margin-bottom:14px;}
   .bar-row .top{display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px;}
@@ -101,6 +106,12 @@
 const todayStr = () => new Date().toISOString().slice(0,10);
 const fmt1 = n => Math.round(n*10)/10;
 
+// If this file is hosted outside Claude.ai (e.g. GitHub Pages), the direct Anthropic call
+// below has no way to authenticate. Set this to your own Cloudflare Worker URL (see
+// worker.js) to make "Analizar con IA" work for anyone who opens the public link.
+// Leave empty to only use the built-in path (works while chatting with Claude directly).
+const AI_PROXY_URL = "";
+
 const PRESETS = {
   ember: {name:'Ember', bg:'#100D0A', surface:'#1B1611', accent:'#F4A340', accent2:'#E8553D', accent3:'#2BB3A3', accent4:'#B98BD6'},
   aurora:{name:'Aurora', bg:'#0B0C16', surface:'#151726', accent:'#9D7BFF', accent2:'#FF5D9E', accent3:'#4FD1FF', accent4:'#7BFFB0'},
@@ -138,6 +149,7 @@ let STATE = {
   gamification: {xp:0},
   customTargets: null,
   theme: PRESETS.ember,
+  settings: {showQuotes:true},
   tab: 'dashboard',
   loaded: false,
   photoDraft: null,
@@ -157,7 +169,9 @@ async function safeGet(key){
   catch(e){ return null; }
 }
 async function safeSet(key,val){
-  const str = typeof val==='string'?val:JSON.stringify(val);
+  let str;
+  try{ str = typeof val==='string'?val:JSON.stringify(val); }
+  catch(e){ console.error('serialize error',e); return; }
   if(hasWidgetStorage){
     try{ await window.storage.set(key, str); }
     catch(e){ console.error('storage error',e); }
@@ -189,6 +203,8 @@ async function loadAll(){
   STATE.customTargets = ct ? JSON.parse(ct) : null;
   const th = await safeGet('theme');
   STATE.theme = th ? JSON.parse(th) : PRESETS.ember;
+  const st = await safeGet('settings');
+  STATE.settings = st ? {...{showQuotes:true}, ...JSON.parse(st)} : {showQuotes:true};
   let keys = await listLogKeys('logs:');
   STATE.logsByDate = {};
   for(const k of keys){
@@ -220,6 +236,7 @@ async function saveEvents(){ await safeSet('events', STATE.events); }
 async function saveGamification(){ await safeSet('gamification', STATE.gamification); }
 async function saveCustomTargets(){ await safeSet('customTargets', STATE.customTargets); }
 async function saveTheme(){ await safeSet('theme', STATE.theme); }
+async function saveSettings(){ await safeSet('settings', STATE.settings); }
 
 function addXP(amount){ STATE.gamification.xp += amount; saveGamification(); }
 function level(){ return Math.floor(STATE.gamification.xp/150)+1; }
@@ -401,11 +418,13 @@ function renderDashboard(body){
   const m = macrosForDate(date);
   const score = hybridScore(date);
   const ev = nextEvent();
-  const q = dailyQuote();
 
   const scoreColor = score>=75?'var(--accent3)':score>=45?'var(--accent)':'var(--danger)';
 
-  body.appendChild(el(`<div class="quote-card"><div class="q">${q.t}</div><div class="src">${q.s}</div></div>`));
+  if(STATE.settings.showQuotes){
+    const q = dailyQuote();
+    body.appendChild(el(`<div class="quote-card"><div class="q">${q.t}</div><div class="src">${q.s}</div></div>`));
+  }
 
   body.appendChild(el(`<div class="card">
     <h3>Hybrid Score de hoy</h3>
@@ -477,22 +496,36 @@ async function analyzePhoto(file, statusEl, resultBox){
   try{
     const base64 = await fileToBase64(file);
     const mediaType = file.type || 'image/jpeg';
-    const resp = await fetch('https://api.anthropic.com/v1/messages', {
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({
-        model:'claude-sonnet-4-6',
-        max_tokens:1000,
-        messages:[{
-          role:'user',
-          content:[
-            {type:'image', source:{type:'base64', media_type:mediaType, data:base64}},
-            {type:'text', text:'Eres el módulo de análisis de comidas de HybridAI. Observa la foto y detecta los alimentos visibles, estima las cantidades (porciones/gramos) y calcula el total aproximado de macros. Responde SOLO con JSON válido, sin texto adicional, sin markdown, con esta forma exacta: {"foods":[{"name":"string","qty":"string"}],"confidence":"alta"|"media"|"baja","totals":{"calories":number,"protein":number,"carbs":number,"fat":number,"sodium":number,"sugar":number},"notes":"string breve"}'}
-          ]
-        }]
-      })
-    });
-    const data = await resp.json();
+    let data;
+    if(AI_PROXY_URL){
+      // Standalone hosting: send only the image to our own Worker, which holds the
+      // real Anthropic API key server-side and builds the request itself.
+      const resp = await fetch(AI_PROXY_URL, {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ image: base64, media_type: mediaType })
+      });
+      if(!resp.ok){ statusEl.textContent = 'El servicio de análisis no respondió (código '+resp.status+'). Intenta de nuevo o ingresa los datos manualmente.'; return; }
+      data = await resp.json();
+    } else {
+      // Running inside a Claude.ai chat/artifact: this call is handled automatically, no key needed here.
+      const resp = await fetch('https://api.anthropic.com/v1/messages', {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({
+          model:'claude-sonnet-4-6',
+          max_tokens:1000,
+          messages:[{
+            role:'user',
+            content:[
+              {type:'image', source:{type:'base64', media_type:mediaType, data:base64}},
+              {type:'text', text:'Eres el módulo de análisis de comidas de HybridAI. Observa la foto y detecta los alimentos visibles, estima las cantidades (porciones/gramos) y calcula el total aproximado de macros. Responde SOLO con JSON válido, sin texto adicional, sin markdown, con esta forma exacta: {"foods":[{"name":"string","qty":"string"}],"confidence":"alta"|"media"|"baja","totals":{"calories":number,"protein":number,"carbs":number,"fat":number,"sodium":number,"sugar":number},"notes":"string breve"}'}
+            ]
+          }]
+        })
+      });
+      data = await resp.json();
+    }
     const textBlock = (data.content||[]).find(c=>c.type==='text');
     if(!textBlock){ statusEl.textContent = 'No se pudo analizar la foto. Intenta de nuevo o ingresa los datos manualmente.'; return; }
     let clean = textBlock.text.replace(/```json|```/g,'').trim();
@@ -546,6 +579,27 @@ function renderPhotoResult(parsed, resultBox){
   };
 }
 
+function parseMetaAIResponse(text){
+  text = text || '';
+  const grab = (re) => { const m = text.match(re); return m ? m[1].trim() : null; };
+  const num = (re) => {
+    const v = grab(re);
+    if(!v) return null;
+    const n = parseFloat(v.replace(',','.').replace(/[^\d.\-]/g,''));
+    return isNaN(n) ? null : n;
+  };
+  return {
+    name: grab(/aliment[oa]s?\s*:\s*(.+)/i),
+    calories: num(/cal[oó]r[ií]as?\s*:\s*([\d.,]+)/i),
+    protein: num(/prote[ií]nas?\s*:\s*([\d.,]+)/i),
+    carbs: num(/carbohidratos?\s*:\s*([\d.,]+)/i),
+    fat: num(/grasas?\s*:\s*([\d.,]+)/i),
+    sodium: num(/sodio\s*:\s*([\d.,]+)/i),
+    sugar: num(/az[uú]car\s*:\s*([\d.,]+)/i),
+    confidence: grab(/confianza\s*:\s*(\w+)/i),
+  };
+}
+
 function renderNutricion(body){
   const date = todayStr();
   const log = getLog(date);
@@ -561,6 +615,14 @@ function renderNutricion(body){
     <img id="photoPreview" class="thumb" style="display:none">
     <p class="note" id="photoStatus"></p>
     <div id="photoResult"></div>
+  </div>`);
+
+  const metaCard = el(`<div class="card">
+    <h3>📋 Pegar respuesta de Meta AI</h3>
+    <p class="note">Manda la foto a Meta AI con el prompt, copia toda su respuesta y pégala aquí — llena los campos de abajo solita, sin escribir número por número.</p>
+    <textarea id="metaPaste" rows="5" placeholder="Alimento: ...&#10;Calorías: ... kcal&#10;Proteína: ... g&#10;..."></textarea>
+    <button class="ghost" id="parseMetaBtn" style="margin-top:10px">Auto-completar campos de abajo</button>
+    <p class="note" id="metaParseStatus"></p>
   </div>`);
 
   const form = el(`<div class="card">
@@ -595,6 +657,7 @@ function renderNutricion(body){
   </div>`);
 
   body.appendChild(photoCard);
+  body.appendChild(metaCard);
   body.appendChild(form);
   body.appendChild(waterCard);
   body.appendChild(list);
@@ -611,18 +674,44 @@ function renderNutricion(body){
   photoCard.querySelector('#camInput').onchange = (e)=> handleFile(e.target.files[0]);
   photoCard.querySelector('#galInput').onchange = (e)=> handleFile(e.target.files[0]);
 
+  metaCard.querySelector('#parseMetaBtn').onclick = ()=>{
+    const text = metaCard.querySelector('#metaPaste').value;
+    const parsed = parseMetaAIResponse(text);
+    const statusEl = metaCard.querySelector('#metaParseStatus');
+    const gotAny = [parsed.calories,parsed.protein,parsed.carbs,parsed.fat].some(v=>v!=null);
+    if(!gotAny){
+      statusEl.textContent = 'No pude leer los números — revisa que pegaste el formato completo, o ingrésalos manual abajo.';
+      return;
+    }
+    if(parsed.name) form.querySelector('#f_name').value = parsed.name;
+    if(parsed.calories!=null) form.querySelector('#f_cal').value = parsed.calories;
+    if(parsed.protein!=null) form.querySelector('#f_pro').value = parsed.protein;
+    if(parsed.carbs!=null) form.querySelector('#f_carb').value = parsed.carbs;
+    if(parsed.fat!=null) form.querySelector('#f_fat').value = parsed.fat;
+    if(parsed.sodium!=null) form.querySelector('#f_sod').value = parsed.sodium;
+    if(parsed.sugar!=null) form.querySelector('#f_sug').value = parsed.sugar;
+    form.querySelector('#f_name').style.borderColor = 'var(--line)';
+    statusEl.textContent = '✔ Campos llenos. Revísalos y dale "Agregar alimento" abajo.' + (parsed.confidence? ' (Meta AI reportó confianza: '+parsed.confidence+')' : '');
+  };
+
   form.querySelector('#addFoodBtn').onclick = async ()=>{
-    const name = form.querySelector('#f_name').value.trim();
-    if(!name){ return; }
-    const item = {
-      name,
-      calories: form.querySelector('#f_cal').value||0,
-      protein: form.querySelector('#f_pro').value||0,
-      carbs: form.querySelector('#f_carb').value||0,
-      fat: form.querySelector('#f_fat').value||0,
-      sodium: form.querySelector('#f_sod').value||0,
-      sugar: form.querySelector('#f_sug').value||0,
-    };
+    let name = form.querySelector('#f_name').value.trim();
+    const cal = form.querySelector('#f_cal').value;
+    const pro = form.querySelector('#f_pro').value;
+    const carb = form.querySelector('#f_carb').value;
+    const fat = form.querySelector('#f_fat').value;
+    const sod = form.querySelector('#f_sod').value;
+    const sug = form.querySelector('#f_sug').value;
+    const hasAnyMacro = [cal,pro,carb,fat,sod,sug].some(v=>v!==''&&v!=null&&Number(v)!==0);
+    if(!name && !hasAnyMacro){
+      const nameInput = form.querySelector('#f_name');
+      nameInput.style.borderColor = 'var(--danger)';
+      nameInput.placeholder = 'Escribe un nombre o al menos un valor, luego dale Agregar';
+      nameInput.focus();
+      return;
+    }
+    if(!name) name = 'Alimento sin nombre';
+    const item = { name, calories:cal||0, protein:pro||0, carbs:carb||0, fat:fat||0, sodium:sod||0, sugar:sug||0 };
     log.food.push(item);
     await saveLog(date);
     addXP(5);
@@ -640,9 +729,210 @@ function renderNutricion(body){
   });
 }
 
+// --- GPS activity tracking (live, in-memory only — not persisted mid-session) ---
+let gpsSession = null;
+
+function haversineKm(a,b){
+  const R=6371;
+  const dLat=(b.lat-a.lat)*Math.PI/180;
+  const dLng=(b.lng-a.lng)*Math.PI/180;
+  const la1=a.lat*Math.PI/180, la2=b.lat*Math.PI/180;
+  const h=Math.sin(dLat/2)**2 + Math.cos(la1)*Math.cos(la2)*Math.sin(dLng/2)**2;
+  return 2*R*Math.asin(Math.sqrt(h));
+}
+function formatDuration(sec){
+  sec=Math.max(0,Math.floor(sec));
+  const h=Math.floor(sec/3600), m=Math.floor((sec%3600)/60), s=sec%60;
+  const mm=String(m).padStart(2,'0'), ss=String(s).padStart(2,'0');
+  return h>0 ? `${h}:${mm}:${ss}` : `${m}:${ss}`;
+}
+const MET_TABLE = {Running:9.8, Trail:10, Ciclismo:7.5, Caminata:3.8, Natación:8.3};
+function estimateActivityCalories(type, minutes){
+  const met = MET_TABLE[type] || 6;
+  const weight = (STATE.profile && STATE.profile.weight) || 70;
+  return Math.round(met*3.5*weight/200*minutes);
+}
+async function connectHeartRateBLE(bpmEl, statusEl){
+  if(!navigator.bluetooth){
+    statusEl.textContent = 'Tu navegador no soporta Bluetooth Web (ej. Safari en iPhone). Puedes anotar el BPM manual al terminar.';
+    return;
+  }
+  try{
+    const device = await navigator.bluetooth.requestDevice({filters:[{services:['heart_rate']}]});
+    const server = await device.gatt.connect();
+    const service = await server.getPrimaryService('heart_rate');
+    const characteristic = await service.getCharacteristic('heart_rate_measurement');
+    await characteristic.startNotifications();
+    characteristic.addEventListener('characteristicvaluechanged', (e)=>{
+      const value = e.target.value;
+      const flags = value.getUint8(0);
+      const bpm = (flags & 0x1) ? value.getUint16(1, true) : value.getUint8(1);
+      if(gpsSession){ gpsSession.bpmSamples.push(bpm); gpsSession.lastBpm = bpm; }
+      if(bpmEl) bpmEl.textContent = bpm;
+    });
+    if(gpsSession) gpsSession.bleDevice = device;
+    statusEl.textContent = '✔ Conectado: ' + (device.name || 'monitor de frecuencia cardíaca');
+  }catch(e){
+    statusEl.textContent = 'No se conectó (cancelaste el diálogo o no hay un monitor cerca).';
+  }
+}
+
+function renderGPSCard(date, log){
+  const card = el(`<div class="card">
+    <h3>📍 Grabar actividad con GPS</h3>
+    <p class="note">Llévate el celular contigo — dibuja tu recorrido en el mapa y calcula distancia y ritmo en vivo. Necesita permiso de ubicación, y funciona mientras la pestaña esté abierta y la pantalla encendida (no en segundo plano, como cualquier navegador). Pruébalo desde el link publicado en tu celular, no aquí en el chat.</p>
+    <label>Tipo de actividad</label>
+    <select id="gps_type">${['Running','Caminata','Ciclismo','Trail','Natación'].map(o=>`<option>${o}</option>`).join('')}</select>
+    <div class="grid3" style="margin-top:12px">
+      <div><div class="note">TIEMPO</div><div class="score-num" style="font-size:24px" id="gps_time">0:00</div></div>
+      <div><div class="note">DISTANCIA</div><div class="score-num" style="font-size:24px" id="gps_dist">0.00 km</div></div>
+      <div><div class="note">RITMO</div><div class="score-num" style="font-size:24px" id="gps_pace">--:--</div></div>
+    </div>
+    <p class="note" style="margin-top:8px">❤️ <span id="gps_bpm">--</span> lpm &nbsp; <button class="ghost" id="gps_ble_btn" style="padding:4px 10px;font-size:11px;">🔗 Conectar monitor Bluetooth (opcional)</button></p>
+    <p class="note" id="gps_ble_status"></p>
+    <div id="gps_map" class="gps-map"></div>
+    <div style="display:flex;gap:10px;margin-top:10px">
+      <button class="primary" id="gps_start_btn">▶ Iniciar</button>
+      <button class="danger" id="gps_stop_btn" style="display:none">■ Terminar y guardar (+15 XP)</button>
+    </div>
+    <p class="note" id="gps_status"></p>
+  </div>`);
+
+  const mapDiv = card.querySelector('#gps_map');
+  const timeEl = card.querySelector('#gps_time');
+  const distEl = card.querySelector('#gps_dist');
+  const paceEl = card.querySelector('#gps_pace');
+  const bpmEl = card.querySelector('#gps_bpm');
+  const statusEl = card.querySelector('#gps_status');
+  const startBtn = card.querySelector('#gps_start_btn');
+  const stopBtn = card.querySelector('#gps_stop_btn');
+  const bleBtn = card.querySelector('#gps_ble_btn');
+  const bleStatus = card.querySelector('#gps_ble_status');
+  const typeSelect = card.querySelector('#gps_type');
+
+  if(!navigator.bluetooth){ bleBtn.style.display='none'; }
+  bleBtn.onclick = ()=> connectHeartRateBLE(bpmEl, bleStatus);
+
+  let map, polyline, marker;
+  function initMap(center){
+    map = L.map(mapDiv,{zoomControl:false}).setView(center, 16);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}).addTo(map);
+    const accentColor = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#F4A340';
+    polyline = L.polyline([],{color:accentColor,weight:4}).addTo(map);
+    marker = L.circleMarker(center,{radius:6,color:'#fff',weight:2,fillColor:'#E8553D',fillOpacity:1}).addTo(map);
+  }
+  function updateMap(pt){
+    if(!map) initMap([pt.lat,pt.lng]);
+    polyline.addLatLng([pt.lat,pt.lng]);
+    marker.setLatLng([pt.lat,pt.lng]);
+    map.panTo([pt.lat,pt.lng]);
+  }
+  function updateStats(){
+    const elapsed = (Date.now()-gpsSession.startTime)/1000;
+    timeEl.textContent = formatDuration(elapsed);
+    distEl.textContent = gpsSession.distanceKm.toFixed(2)+' km';
+    if(gpsSession.distanceKm>0.05){
+      const paceMin = (elapsed/60)/gpsSession.distanceKm;
+      const m=Math.floor(paceMin), s=Math.round((paceMin-m)*60);
+      paceEl.textContent = `${m}:${String(s).padStart(2,'0')} /km`;
+    }
+    if(gpsSession.lastBpm) bpmEl.textContent = gpsSession.lastBpm;
+  }
+
+  if(gpsSession && gpsSession.active){
+    startBtn.style.display='none';
+    stopBtn.style.display='inline-block';
+    typeSelect.value = gpsSession.type;
+    typeSelect.disabled = true;
+    const pts = gpsSession.points;
+    if(pts.length) initMap([pts[pts.length-1].lat, pts[pts.length-1].lng]);
+    pts.forEach(p=>{ if(map){ polyline.addLatLng([p.lat,p.lng]); marker.setLatLng([p.lat,p.lng]); } });
+    updateStats();
+    gpsSession.onTick = updateStats;
+    gpsSession.onPoint = updateMap;
+  }
+
+  startBtn.onclick = async ()=>{
+    if(!navigator.geolocation){ statusEl.textContent='Este navegador no soporta geolocalización.'; return; }
+    gpsSession = {
+      active:true, type:typeSelect.value, points:[], distanceKm:0,
+      startTime:Date.now(), bpmSamples:[], lastBpm:null, wakeLock:null,
+      watchId:null, tickHandle:null, onTick:updateStats, onPoint:updateMap,
+    };
+    startBtn.style.display='none';
+    stopBtn.style.display='inline-block';
+    typeSelect.disabled = true;
+    statusEl.textContent = 'Buscando señal GPS...';
+    if('wakeLock' in navigator){ try{ gpsSession.wakeLock = await navigator.wakeLock.request('screen'); }catch(e){} }
+
+    gpsSession.watchId = navigator.geolocation.watchPosition((pos)=>{
+      if(pos.coords.accuracy && pos.coords.accuracy>60) return;
+      const pt = {lat:pos.coords.latitude, lng:pos.coords.longitude, t:Date.now()};
+      const pts = gpsSession.points;
+      if(pts.length){
+        const last = pts[pts.length-1];
+        const km = haversineKm(last, pt);
+        const hrs = (pt.t-last.t)/3600000;
+        const speedKmh = hrs>0 ? km/hrs : 0;
+        if(speedKmh > 70) return;
+        gpsSession.distanceKm += km;
+      } else {
+        statusEl.textContent = '';
+      }
+      pts.push(pt);
+      if(pts.length>3000) pts.splice(0, pts.length-3000);
+      if(gpsSession.onPoint){ try{ gpsSession.onPoint(pt); }catch(e){} }
+    }, ()=>{
+      statusEl.textContent = 'No se pudo obtener tu ubicación — revisa el permiso de ubicación del navegador.';
+    }, {enableHighAccuracy:true, maximumAge:2000, timeout:15000});
+
+    gpsSession.tickHandle = setInterval(()=>{ if(gpsSession && gpsSession.onTick){ try{ gpsSession.onTick(); }catch(e){} } }, 1000);
+  };
+
+  stopBtn.onclick = async ()=>{
+    if(!gpsSession) return;
+    navigator.geolocation.clearWatch(gpsSession.watchId);
+    clearInterval(gpsSession.tickHandle);
+    if(gpsSession.wakeLock){ try{ await gpsSession.wakeLock.release(); }catch(e){} }
+    if(gpsSession.bleDevice && gpsSession.bleDevice.gatt.connected){ try{ gpsSession.bleDevice.gatt.disconnect(); }catch(e){} }
+
+    const elapsedMin = (Date.now()-gpsSession.startTime)/60000;
+    const avgBpm = gpsSession.bpmSamples.length ? Math.round(gpsSession.bpmSamples.reduce((a,b)=>a+b,0)/gpsSession.bpmSamples.length) : null;
+    const item = {
+      type: gpsSession.type,
+      duration: Math.round(elapsedMin),
+      intensity: 6,
+      calBurn: estimateActivityCalories(gpsSession.type, elapsedMin),
+      notes: gpsSession.type+' con GPS',
+      distanceKm: Math.round(gpsSession.distanceKm*100)/100,
+      avgBpm,
+      route: gpsSession.points.map(p=>({lat:p.lat,lng:p.lng})),
+    };
+    log.training.push(item);
+    await saveLog(date);
+    addXP(15);
+    gpsSession = null;
+    render();
+  };
+
+  return card;
+}
+
+function showRoutePreview(container, route){
+  container.innerHTML = '<div class="gps-map mini-map" id="miniMapTmp"></div>';
+  const div = container.querySelector('#miniMapTmp');
+  const map = L.map(div,{zoomControl:false,dragging:true,scrollWheelZoom:false}).setView([route[0].lat,route[0].lng],15);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}).addTo(map);
+  const latlngs = route.map(p=>[p.lat,p.lng]);
+  const accentColor = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#F4A340';
+  const poly = L.polyline(latlngs,{color:accentColor,weight:4}).addTo(map);
+  map.fitBounds(poly.getBounds(),{padding:[20,20]});
+}
+
 function renderEntrenamiento(body){
   const date = todayStr();
   const log = getLog(date);
+  const gpsCard = renderGPSCard(date, log);
   const form = el(`<div class="card">
     <h3>Registrar entrenamiento — ${date}</h3>
     <label>Tipo</label>
@@ -660,11 +950,12 @@ function renderEntrenamiento(body){
 
   const list = el(`<div class="card">
     <h3>Entrenamientos de hoy</h3>
-    ${(log.training||[]).length ? `<table><tr><th>Tipo</th><th>Min</th><th>Int.</th><th>Kcal</th><th></th></tr>
-      ${log.training.map((tr,i)=>`<tr><td>${tr.type}</td><td>${tr.duration}</td><td>${tr.intensity}</td><td>${tr.calBurn||'-'}</td><td><button class="danger" data-idx="${i}">✕</button></td></tr>`).join('')}
-    </table>` : '<p class="empty">Aún no registras entrenamiento hoy.</p>'}
+    ${(log.training||[]).length ? `<table><tr><th>Tipo</th><th>Min</th><th>Int.</th><th>Kcal</th><th>Dist.</th><th></th><th></th></tr>
+      ${log.training.map((tr,i)=>`<tr><td>${tr.type}</td><td>${tr.duration}</td><td>${tr.intensity}</td><td>${tr.calBurn||'-'}</td><td>${tr.distanceKm?tr.distanceKm+' km':'-'}</td><td>${tr.route&&tr.route.length>1?`<button class="ghost" data-map-idx="${i}" style="padding:3px 8px;font-size:10px">🗺️</button>`:''}</td><td><button class="danger" data-idx="${i}">✕</button></td></tr>`).join('')}
+    </table><div id="routeViewer"></div>` : '<p class="empty">Aún no registras entrenamiento hoy.</p>'}
   </div>`);
 
+  body.appendChild(gpsCard);
   body.appendChild(form);
   body.appendChild(list);
 
@@ -686,6 +977,12 @@ function renderEntrenamiento(body){
       log.training.splice(Number(btn.dataset.idx),1);
       await saveLog(date);
       render();
+    };
+  });
+  list.querySelectorAll('button[data-map-idx]').forEach(btn=>{
+    btn.onclick = ()=>{
+      const tr = log.training[Number(btn.dataset.mapIdx)];
+      showRoutePreview(list.querySelector('#routeViewer'), tr.route);
     };
   });
 }
@@ -939,11 +1236,26 @@ function renderPerfil(body){
     <p class="note">El botón "WhatsApp" en la parte superior abre un chat con un link directo a esta app. Para que el link funcione siempre igual (incluso mañana), lo ideal es descargar este archivo HTML y subirlo a un hosting gratuito (GitHub Pages, Netlify, Vercel) para tener una URL fija — desde este chat la vista previa puede cambiar de dirección. Si quieres, te ayudo a dejarlo listo para subir a GitHub Pages.</p>
   </div>`);
 
+  const prefsCard = el(`<div class="card">
+    <h3>🔔 Preferencias</h3>
+    <label style="display:flex;align-items:center;gap:10px;margin-top:6px;cursor:pointer;">
+      <input type="checkbox" id="pref_quotes" style="width:18px;height:18px;" ${STATE.settings.showQuotes?'checked':''}>
+      <span style="text-transform:none;font-size:13px;color:var(--text);">Mostrar frase del día (bíblica/motivacional) en el Dashboard</span>
+    </label>
+    <p class="note">Apágalo si prefieres una app sin contenido religioso — se guarda para siempre, no hay que repetirlo cada vez.</p>
+  </div>`);
+
   body.appendChild(themeCard);
   body.appendChild(form);
   body.appendChild(targetsCard);
+  body.appendChild(prefsCard);
   body.appendChild(voiceCard);
   body.appendChild(shareCard);
+
+  prefsCard.querySelector('#pref_quotes').onchange = async (e)=>{
+    STATE.settings.showQuotes = e.target.checked;
+    await saveSettings();
+  };
 
   form.querySelector('#saveProfileBtn').onclick = async ()=>{
     STATE.profile = {
