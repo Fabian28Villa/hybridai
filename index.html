@@ -5,57 +5,57 @@
 <title>HybridAI</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&family=Source+Serif+4:ital@1&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&family=Source+Serif+4:ital@1&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
 <style>
   :root{
-    --bg:#100D0A;
-    --surface:#1B1611;
-    --surface-2:#251E16;
-    --line:#3A2F22;
-    --text:#F6EEE3;
-    --muted:#A2907E;
-    --accent:#F4A340;
-    --accent2:#E8553D;
-    --accent3:#2BB3A3;
-    --accent4:#B98BD6;
-    --danger:#E8553D;
-    --font-display:'Space Grotesk', sans-serif;
-    --font-body:'Inter', sans-serif;
+    --bg:#0A1310;
+    --surface:#111D18;
+    --surface-2:#1A2C24;
+    --line:#2B4038;
+    --text:#EBEFEA;
+    --muted:#87988D;
+    --accent:#CFEB3D;
+    --accent2:#E1512F;
+    --accent3:#2F9E9A;
+    --accent4:#A6A186;
+    --danger:#E1512F;
+    --font-display:'Oswald', sans-serif;
+    --font-body:'IBM Plex Sans', sans-serif;
     --font-mono:'IBM Plex Mono', monospace;
     --font-serif:'Source Serif 4', serif;
   }
   *{box-sizing:border-box;}
   body{margin:0;background:var(--bg);color:var(--text);font-family:var(--font-body);}
-  h1,h2,h3{font-family:var(--font-display);margin:0;}
+  h1,h2,h3{font-family:var(--font-display);margin:0;text-transform:uppercase;letter-spacing:0.3px;}
   .app{max-width:960px;margin:0 auto;padding:20px 16px 100px;}
   header.top{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:10px;}
   .brand{display:flex;align-items:center;gap:10px;}
-  .brand .mark{width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,var(--accent),var(--accent3));display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-weight:600;color:#100D0A;font-size:15px;}
-  .brand h1{font-size:20px;letter-spacing:0.5px;}
-  .brand p{margin:0;font-size:11px;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;}
-  .level-chip{font-family:var(--font-mono);font-size:12px;background:var(--surface);border:1px solid var(--line);padding:6px 10px;border-radius:20px;color:var(--accent);}
+  .brand .mark{width:34px;height:34px;border-radius:4px;background:var(--accent);display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-weight:600;color:var(--bg);font-size:15px;}
+  .brand h1{font-size:21px;letter-spacing:0.5px;font-weight:600;}
+  .brand p{margin:0;font-size:11px;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;font-family:var(--font-mono);}
+  .level-chip{font-family:var(--font-mono);font-size:12px;background:var(--surface);border:1px solid var(--line);padding:6px 10px;border-radius:4px;color:var(--accent);}
   .header-actions{display:flex;gap:8px;align-items:center;}
 
   nav.tabs{display:flex;gap:4px;overflow-x:auto;border-bottom:1px solid var(--line);margin-bottom:20px;padding-bottom:0;}
-  nav.tabs button{background:none;border:none;color:var(--muted);font-family:var(--font-body);font-weight:600;font-size:13px;padding:10px 14px;cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;}
+  nav.tabs button{background:none;border:none;color:var(--muted);font-family:var(--font-display);font-weight:600;font-size:13px;text-transform:uppercase;letter-spacing:0.5px;padding:10px 14px;cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;}
   nav.tabs button.active{color:var(--text);border-bottom:2px solid var(--accent);}
 
-  .card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:16px;}
-  .card h3{font-size:13px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:12px;}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:3px;padding:18px;margin-bottom:16px;}
+  .card h3{font-size:13px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:12px;font-weight:600;}
   .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
   .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;}
   @media(max-width:640px){.grid2,.grid3{grid-template-columns:1fr;}}
 
   .score-wrap{display:flex;align-items:center;gap:18px;}
-  .score-num{font-family:var(--font-mono);font-size:44px;font-weight:600;color:var(--accent);}
+  .score-num{font-family:var(--font-mono);font-size:44px;font-weight:600;color:var(--accent);background:#08100D;border:1px solid var(--line);border-radius:3px;padding:6px 14px;display:inline-block;}
   .score-label{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:1px;}
 
-  .quote-card{background:linear-gradient(135deg,var(--surface-2),var(--surface));border:1px solid var(--line);border-radius:14px;padding:20px;margin-bottom:16px;position:relative;}
+  .quote-card{background:var(--surface);border:1px solid var(--line);border-radius:3px;padding:20px;margin-bottom:16px;position:relative;}
   .quote-card .q{font-family:var(--font-serif);font-style:italic;font-size:17px;line-height:1.5;color:var(--text);}
-  .quote-card .src{margin-top:8px;font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:1px;}
-  .gps-map{height:260px;border-radius:12px;overflow:hidden;margin-top:12px;background:var(--surface-2);}
+  .quote-card .src{margin-top:8px;font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:1px;font-family:var(--font-mono);}
+  .gps-map{height:260px;border-radius:3px;overflow:hidden;margin-top:12px;background:var(--surface-2);}
   .mini-map{height:180px;margin-top:10px;}
   .leaflet-control-attribution{font-size:9px !important;}
 
@@ -63,39 +63,34 @@
   .bar-row .top{display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px;}
   .bar-row .top .name{color:var(--text);font-weight:600;}
   .bar-row .top .vals{font-family:var(--font-mono);color:var(--muted);}
-  .bar-track{height:8px;background:var(--surface-2);border-radius:6px;overflow:hidden;}
-  .bar-fill{height:100%;border-radius:6px;transition:width .3s;}
+  .bar-track{height:6px;background:var(--surface-2);border-radius:1px;overflow:hidden;}
+  .bar-fill{height:100%;border-radius:1px;transition:width .3s;}
 
-  input,select,textarea{width:100%;background:var(--surface-2);border:1px solid var(--line);color:var(--text);padding:9px 10px;border-radius:8px;font-family:var(--font-body);font-size:13px;}
+  input,select,textarea{width:100%;background:var(--surface-2);border:1px solid var(--line);color:var(--text);padding:9px 10px;border-radius:3px;font-family:var(--font-body);font-size:13px;}
   input[type=color]{padding:3px;height:38px;cursor:pointer;}
   label{display:block;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;margin-top:10px;}
-  button.primary{background:var(--accent);color:#100D0A;border:none;font-weight:700;padding:10px 16px;border-radius:8px;cursor:pointer;font-size:13px;margin-top:14px;}
-  button.ghost{background:none;border:1px solid var(--line);color:var(--text);padding:8px 12px;border-radius:8px;cursor:pointer;font-size:12px;}
-  button.danger{background:none;border:1px solid var(--danger);color:var(--danger);padding:5px 9px;border-radius:6px;cursor:pointer;font-size:11px;}
+  button.primary{background:var(--accent);color:#08100D;border:none;font-weight:700;padding:10px 16px;border-radius:3px;cursor:pointer;font-size:13px;margin-top:14px;font-family:var(--font-display);text-transform:uppercase;letter-spacing:0.5px;}
+  button.ghost{background:none;border:1px solid var(--line);color:var(--text);padding:8px 12px;border-radius:3px;cursor:pointer;font-size:12px;}
+  button.danger{background:none;border:1px solid var(--danger);color:var(--danger);padding:5px 9px;border-radius:3px;cursor:pointer;font-size:11px;}
   button.icon-btn{background:var(--surface-2);border:1px solid var(--line);color:var(--text);border-radius:50%;width:44px;height:44px;font-size:18px;cursor:pointer;}
 
   table{width:100%;border-collapse:collapse;font-size:13px;}
-  th{text-align:left;color:var(--muted);font-size:11px;text-transform:uppercase;padding:6px 4px;border-bottom:1px solid var(--line);}
+  th{text-align:left;color:var(--muted);font-size:11px;text-transform:uppercase;padding:6px 4px;border-bottom:1px solid var(--line);font-family:var(--font-mono);}
   td{padding:8px 4px;border-bottom:1px solid var(--line);}
 
-  .pill{display:inline-block;font-family:var(--font-mono);font-size:11px;padding:3px 8px;border-radius:20px;background:var(--surface-2);color:var(--muted);}
-  .conf-alta{color:var(--accent3);} .conf-media{color:var(--accent);} .conf-baja{color:var(--danger);}
-  .event-card{border-left:3px solid var(--accent3);background:var(--surface-2);border-radius:10px;padding:12px;margin-bottom:10px;}
-  .event-card.priority-high{border-left-color:var(--accent2);}
+  .pill{display:inline-block;font-family:var(--font-mono);font-size:11px;padding:3px 8px;border-radius:3px;background:var(--surface-2);color:var(--muted);}
+  .event-card{border:1px solid var(--line);background:var(--surface-2);border-radius:3px;padding:12px;margin-bottom:10px;}
+  .event-card.priority-high{border-color:var(--accent2);}
   .swatch-row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px;}
-  .swatch{width:60px;height:60px;border-radius:10px;border:2px solid var(--line);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:10px;text-align:center;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,0.5);}
+  .swatch{width:60px;height:60px;border-radius:3px;border:2px solid var(--line);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:10px;text-align:center;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,0.5);}
   .empty{color:var(--muted);font-size:13px;text-align:center;padding:20px 0;}
   .note{font-size:12px;color:var(--muted);margin-top:6px;line-height:1.5;}
   canvas{width:100%;max-width:100%;}
   .flex-between{display:flex;justify-content:space-between;align-items:center;}
-  .mic-fab{position:fixed;bottom:20px;right:20px;width:56px;height:56px;border-radius:50%;background:var(--accent);color:#100D0A;border:none;font-size:22px;box-shadow:0 4px 14px rgba(0,0,0,0.4);cursor:pointer;z-index:50;}
+  .mic-fab{position:fixed;bottom:20px;right:20px;width:56px;height:56px;border-radius:50%;background:var(--accent);color:#08100D;border:none;font-size:22px;box-shadow:0 4px 14px rgba(0,0,0,0.4);cursor:pointer;z-index:50;}
   .mic-fab.listening{animation:pulse 1s infinite;}
-  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(244,163,64,0.6);}70%{box-shadow:0 0 0 14px rgba(244,163,64,0);}100%{box-shadow:0 0 0 0 rgba(244,163,64,0);}}
-  .voice-toast{position:fixed;bottom:86px;right:20px;background:var(--surface);border:1px solid var(--line);padding:10px 14px;border-radius:10px;font-size:12px;max-width:220px;z-index:50;}
-  .thumb{width:100%;max-height:220px;object-fit:cover;border-radius:10px;margin-top:10px;}
-  .cam-row{display:flex;gap:10px;margin-top:10px;flex-wrap:wrap;}
-  .cam-row label.filebtn{display:inline-flex;align-items:center;justify-content:center;background:var(--surface-2);border:1px solid var(--line);color:var(--text);padding:9px 14px;border-radius:8px;cursor:pointer;font-size:12px;width:auto;}
-  .cam-row input[type=file]{display:none;}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(207,235,61,0.5);}70%{box-shadow:0 0 0 14px rgba(207,235,61,0);}100%{box-shadow:0 0 0 0 rgba(207,235,61,0);}}
+  .voice-toast{position:fixed;bottom:86px;right:20px;background:var(--surface);border:1px solid var(--line);padding:10px 14px;border-radius:3px;font-size:12px;max-width:220px;z-index:50;}
 </style>
 </head>
 <body>
@@ -106,17 +101,11 @@
 const todayStr = () => new Date().toISOString().slice(0,10);
 const fmt1 = n => Math.round(n*10)/10;
 
-// If this file is hosted outside Claude.ai (e.g. GitHub Pages), the direct Anthropic call
-// below has no way to authenticate. Set this to your own Cloudflare Worker URL (see
-// worker.js) to make "Analizar con IA" work for anyone who opens the public link.
-// Leave empty to only use the built-in path (works while chatting with Claude directly).
-const AI_PROXY_URL = "";
-
 const PRESETS = {
-  ember: {name:'Ember', bg:'#100D0A', surface:'#1B1611', accent:'#F4A340', accent2:'#E8553D', accent3:'#2BB3A3', accent4:'#B98BD6'},
-  aurora:{name:'Aurora', bg:'#0B0C16', surface:'#151726', accent:'#9D7BFF', accent2:'#FF5D9E', accent3:'#4FD1FF', accent4:'#7BFFB0'},
-  mono:  {name:'Mono Lime', bg:'#0D0F12', surface:'#161A1F', accent:'#C8FF3D', accent2:'#FF6A3D', accent3:'#35D6C0', accent4:'#9D7BFF'},
-  ocean: {name:'Ocean', bg:'#081016', surface:'#0F1B24', accent:'#39C6E0', accent2:'#F2A65A', accent3:'#4FE0A0', accent4:'#6E8EFF'},
+  pista:   {name:'Pista',    bg:'#0A1310', surface:'#111D18', accent:'#CFEB3D', accent2:'#E1512F', accent3:'#2F9E9A', accent4:'#A6A186'},
+  nocturno:{name:'Nocturno', bg:'#0B1220', surface:'#131E30', accent:'#4FC3E8', accent2:'#E1512F', accent3:'#6B8CFF', accent4:'#8FA0B8'},
+  grafito: {name:'Grafito',  bg:'#14161A', surface:'#1D2025', accent:'#E8EAED', accent2:'#D64545', accent3:'#5B8AA6', accent4:'#8A8F98'},
+  arcilla: {name:'Arcilla',  bg:'#1A1210', surface:'#241A16', accent:'#E0793E', accent2:'#C23B2E', accent3:'#4A8B7C', accent4:'#B08968'},
 };
 
 const QUOTES = [
@@ -148,11 +137,10 @@ let STATE = {
   logsByDate: {},
   gamification: {xp:0},
   customTargets: null,
-  theme: PRESETS.ember,
+  theme: PRESETS.pista,
   settings: {showQuotes:true},
   tab: 'dashboard',
   loaded: false,
-  photoDraft: null,
 };
 
 // Uses window.storage when running inside a Claude.ai artifact (data tied to your Claude account).
@@ -202,7 +190,7 @@ async function loadAll(){
   const ct = await safeGet('customTargets');
   STATE.customTargets = ct ? JSON.parse(ct) : null;
   const th = await safeGet('theme');
-  STATE.theme = th ? JSON.parse(th) : PRESETS.ember;
+  STATE.theme = th ? JSON.parse(th) : PRESETS.pista;
   const st = await safeGet('settings');
   STATE.settings = st ? {...{showQuotes:true}, ...JSON.parse(st)} : {showQuotes:true};
   let keys = await listLogKeys('logs:');
@@ -345,7 +333,7 @@ function renderHeader(){
       </div>
       <div class="header-actions">
         <div class="level-chip">NIVEL ${lvl} · 🔥${streakDays()}d</div>
-        <button class="ghost" id="waShareBtn">📲 WhatsApp</button>
+        <button class="ghost" id="waShareBtn">WhatsApp</button>
       </div>
     </header>
   `);
@@ -353,12 +341,12 @@ function renderHeader(){
 
 function renderTabs(){
   const tabs = [
-    ['dashboard','📊 Dashboard'],
-    ['nutricion','🍽 Nutrición'],
-    ['entrenamiento','🏃 Entrenamiento'],
-    ['calendario','📅 Calendario'],
-    ['progreso','📈 Progreso'],
-    ['perfil','⚙️ Ajustes'],
+    ['dashboard','Dashboard'],
+    ['nutricion','Nutrición'],
+    ['entrenamiento','Entrenamiento'],
+    ['calendario','Calendario'],
+    ['progreso','Progreso'],
+    ['perfil','Ajustes'],
   ];
   const nav = document.createElement('nav');
   nav.className = 'tabs';
@@ -386,7 +374,7 @@ function renderTabBody(){
   body.innerHTML = '';
   wireHeaderActions();
   if(!STATE.profile && STATE.tab!=='perfil'){
-    body.appendChild(el(`<div class="card"><h3>Primero, tu perfil</h3><p class="note">Para calcular tus objetivos de calorías, macros e hidratación necesito algunos datos básicos. Ve a la pestaña ⚙️ Ajustes para comenzar. No voy a inventar estos datos.</p></div>`));
+    body.appendChild(el(`<div class="card"><h3>Primero, tu perfil</h3><p class="note">Para calcular tus objetivos de calorías, macros e hidratación necesito algunos datos básicos. Ve a la pestaña Ajustes para comenzar. No voy a inventar estos datos.</p></div>`));
     return;
   }
   if(STATE.tab==='dashboard') return renderDashboard(body);
@@ -439,7 +427,7 @@ function renderDashboard(body){
 
   const grid = document.createElement('div'); grid.className='grid2';
   grid.appendChild(el(`<div class="card">
-    <h3>🍽 Nutrición — ${date}</h3>
+    <h3>Nutrición — ${date}</h3>
     ${bar('Calorías', m.calories, t.calories, 'var(--accent)', ' kcal')}
     ${bar('Proteína', m.protein, t.protein, 'var(--accent2)', 'g')}
     ${bar('Carbohidratos', m.carbs, t.carbs, 'var(--accent3)', 'g')}
@@ -450,23 +438,23 @@ function renderDashboard(body){
   `));
   const trainingToday = log.training||[];
   grid.appendChild(el(`<div class="card">
-    <h3>🏃 Entrenamiento de hoy</h3>
+    <h3>Entrenamiento de hoy</h3>
     ${trainingToday.length ? trainingToday.map(tr=>`<span class="pill" style="margin:2px;display:inline-block">${tr.type} · ${tr.duration}min · Int.${tr.intensity}/10</span>`).join('') : '<p class="empty">Sin entrenamiento registrado hoy.</p>'}
-    <h3 style="margin-top:14px">😴 Recuperación</h3>
+    <h3 style="margin-top:14px">Recuperación</h3>
     <p class="note">Sueño: ${log.sleep ? log.sleep+' h' : 'sin registrar'} · Peso: ${log.weight ? log.weight+' kg' : 'sin registrar'}</p>
   </div>`));
   body.appendChild(grid);
 
   body.appendChild(el(`<div class="card">
-    <h3>📅 Próximo evento</h3>
+    <h3>Próximo evento</h3>
     ${ev ? `<div class="event-card ${ev.priority==='alta'?'priority-high':''}">
       <strong>${ev.type}</strong> — ${ev.date} ${ev.time||''}<br>
       <span class="note">${ev.distance? ev.distance+' · ':''}${ev.notes||''}</span>
-    </div>` : '<p class="empty">No hay eventos próximos. Agrega uno en 📅 Calendario.</p>'}
+    </div>` : '<p class="empty">No hay eventos próximos. Agrega uno en la pestaña Calendario.</p>'}
   </div>`));
 
   body.appendChild(el(`<div class="card">
-    <h3>💡 Recomendación principal</h3>
+    <h3>Recomendación principal</h3>
     <p>${buildRecommendation(m,t,log)}</p>
   </div>`));
 }
@@ -480,103 +468,6 @@ function buildRecommendation(m,t,log){
   if((log.training||[]).length===0) issues.push('no has registrado entrenamiento hoy — si ya entrenaste, regístralo para que ajuste tus calorías y recuperación');
   if(issues.length===0) return 'Vas muy bien hoy: tus macros e hidratación están dentro de rango. Mantén el ritmo y prioriza dormir 7-9 horas para consolidar la recuperación.';
   return issues[0].charAt(0).toUpperCase()+issues[0].slice(1)+'.';
-}
-
-function fileToBase64(file){
-  return new Promise((resolve,reject)=>{
-    const r = new FileReader();
-    r.onload = ()=> resolve(r.result.split(',')[1]);
-    r.onerror = reject;
-    r.readAsDataURL(file);
-  });
-}
-
-async function analyzePhoto(file, statusEl, resultBox){
-  statusEl.textContent = 'Analizando foto con IA...';
-  try{
-    const base64 = await fileToBase64(file);
-    const mediaType = file.type || 'image/jpeg';
-    let data;
-    if(AI_PROXY_URL){
-      // Standalone hosting: send only the image to our own Worker, which holds the
-      // real Anthropic API key server-side and builds the request itself.
-      const resp = await fetch(AI_PROXY_URL, {
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({ image: base64, media_type: mediaType })
-      });
-      if(!resp.ok){ statusEl.textContent = 'El servicio de análisis no respondió (código '+resp.status+'). Intenta de nuevo o ingresa los datos manualmente.'; return; }
-      data = await resp.json();
-    } else {
-      // Running inside a Claude.ai chat/artifact: this call is handled automatically, no key needed here.
-      const resp = await fetch('https://api.anthropic.com/v1/messages', {
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({
-          model:'claude-sonnet-4-6',
-          max_tokens:1000,
-          messages:[{
-            role:'user',
-            content:[
-              {type:'image', source:{type:'base64', media_type:mediaType, data:base64}},
-              {type:'text', text:'Eres el módulo de análisis de comidas de HybridAI. Observa la foto y detecta los alimentos visibles, estima las cantidades (porciones/gramos) y calcula el total aproximado de macros. Responde SOLO con JSON válido, sin texto adicional, sin markdown, con esta forma exacta: {"foods":[{"name":"string","qty":"string"}],"confidence":"alta"|"media"|"baja","totals":{"calories":number,"protein":number,"carbs":number,"fat":number,"sodium":number,"sugar":number},"notes":"string breve"}'}
-            ]
-          }]
-        })
-      });
-      data = await resp.json();
-    }
-    const textBlock = (data.content||[]).find(c=>c.type==='text');
-    if(!textBlock){ statusEl.textContent = 'No se pudo analizar la foto. Intenta de nuevo o ingresa los datos manualmente.'; return; }
-    let clean = textBlock.text.replace(/```json|```/g,'').trim();
-    const parsed = JSON.parse(clean);
-    STATE.photoDraft = parsed;
-    statusEl.textContent = '';
-    renderPhotoResult(parsed, resultBox);
-  }catch(e){
-    console.error(e);
-    statusEl.textContent = 'Hubo un error analizando la foto. Puedes registrar el alimento manualmente.';
-  }
-}
-
-function renderPhotoResult(parsed, resultBox){
-  resultBox.innerHTML = '';
-  const confClass = parsed.confidence==='alta'?'conf-alta':parsed.confidence==='media'?'conf-media':'conf-baja';
-  const foodsList = (parsed.foods||[]).map(f=>`${f.name} (${f.qty})`).join(', ');
-  const box = el(`<div class="card">
-    <h3>Resultado del análisis</h3>
-    <p><strong>Detectado:</strong> ${foodsList||'sin detalles'}</p>
-    <p class="${confClass}">Confianza: ${parsed.confidence||'media'}</p>
-    ${parsed.notes?`<p class="note">${parsed.notes}</p>`:''}
-    <p class="note">Revisa y ajusta los valores antes de confirmar — la IA estima, no mide con exactitud.</p>
-    <div class="grid3">
-      <div><label>Calorías</label><input id="pd_cal" type="number" value="${parsed.totals?.calories||0}"></div>
-      <div><label>Proteína (g)</label><input id="pd_pro" type="number" value="${parsed.totals?.protein||0}"></div>
-      <div><label>Carbohidratos (g)</label><input id="pd_carb" type="number" value="${parsed.totals?.carbs||0}"></div>
-      <div><label>Grasas (g)</label><input id="pd_fat" type="number" value="${parsed.totals?.fat||0}"></div>
-      <div><label>Sodio (mg)</label><input id="pd_sod" type="number" value="${parsed.totals?.sodium||0}"></div>
-      <div><label>Azúcar (g)</label><input id="pd_sug" type="number" value="${parsed.totals?.sugar||0}"></div>
-    </div>
-    <button class="primary" id="confirmPhotoBtn">✔ Confirmar y registrar (+10 XP)</button>
-  </div>`);
-  resultBox.appendChild(box);
-  box.querySelector('#confirmPhotoBtn').onclick = async ()=>{
-    const date = todayStr();
-    const log = getLog(date);
-    log.food.push({
-      name: foodsList || 'Comida (foto)',
-      calories: box.querySelector('#pd_cal').value||0,
-      protein: box.querySelector('#pd_pro').value||0,
-      carbs: box.querySelector('#pd_carb').value||0,
-      fat: box.querySelector('#pd_fat').value||0,
-      sodium: box.querySelector('#pd_sod').value||0,
-      sugar: box.querySelector('#pd_sug').value||0,
-    });
-    await saveLog(date);
-    addXP(10);
-    STATE.photoDraft = null;
-    render();
-  };
 }
 
 function parseMetaAIResponse(text){
@@ -605,23 +496,11 @@ function renderNutricion(body){
   const log = getLog(date);
   const t = targets();
 
-  const photoCard = el(`<div class="card">
-    <h3>📸 Analizar comida con foto</h3>
-    <p class="note">Toma una foto o sube una imagen de tu comida y la IA estimará los macros. Siempre podrás corregir los valores antes de confirmar.</p>
-    <div class="cam-row">
-      <label class="filebtn">📷 Tomar foto<input type="file" accept="image/*" capture="environment" id="camInput"></label>
-      <label class="filebtn">🖼 Subir de galería<input type="file" accept="image/*" id="galInput"></label>
-    </div>
-    <img id="photoPreview" class="thumb" style="display:none">
-    <p class="note" id="photoStatus"></p>
-    <div id="photoResult"></div>
-  </div>`);
-
   const metaCard = el(`<div class="card">
-    <h3>📋 Pegar respuesta de Meta AI</h3>
-    <p class="note">Manda la foto a Meta AI con el prompt, copia toda su respuesta y pégala aquí — llena los campos de abajo solita, sin escribir número por número.</p>
+    <h3>Leer macros desde Meta AI</h3>
+    <p class="note">Manda la foto de tu comida a Meta AI (por WhatsApp) con el prompt guardado, copia toda su respuesta y pégala aquí — llena los campos de abajo sola, sin escribir número por número.</p>
     <textarea id="metaPaste" rows="5" placeholder="Alimento: ...&#10;Calorías: ... kcal&#10;Proteína: ... g&#10;..."></textarea>
-    <button class="ghost" id="parseMetaBtn" style="margin-top:10px">Auto-completar campos de abajo</button>
+    <button class="ghost" id="parseMetaBtn" style="margin-top:10px">Leer y completar campos</button>
     <p class="note" id="metaParseStatus"></p>
   </div>`);
 
@@ -636,11 +515,11 @@ function renderNutricion(body){
       <div><label>Sodio (mg)</label><input id="f_sod" type="number"></div>
       <div><label>Azúcar (g)</label><input id="f_sug" type="number"></div>
     </div>
-    <button class="primary" id="addFoodBtn">+ Agregar alimento (+5 XP)</button>
+    <button class="primary" id="addFoodBtn">Agregar alimento (+5 XP)</button>
   </div>`);
 
   const waterCard = el(`<div class="card">
-    <h3>💧 Hidratación</h3>
+    <h3>Hidratación</h3>
     ${bar('Agua', log.water||0, t.water, 'var(--accent3)', 'ml')}
     <div style="display:flex;gap:8px;margin-top:10px">
       <button class="ghost" id="w250">+250ml</button>
@@ -656,23 +535,10 @@ function renderNutricion(body){
     </table>` : '<p class="empty">Aún no registras comidas hoy.</p>'}
   </div>`);
 
-  body.appendChild(photoCard);
   body.appendChild(metaCard);
   body.appendChild(form);
   body.appendChild(waterCard);
   body.appendChild(list);
-
-  const statusEl = photoCard.querySelector('#photoStatus');
-  const resultBox = photoCard.querySelector('#photoResult');
-  const preview = photoCard.querySelector('#photoPreview');
-  function handleFile(file){
-    if(!file) return;
-    preview.src = URL.createObjectURL(file);
-    preview.style.display = 'block';
-    analyzePhoto(file, statusEl, resultBox);
-  }
-  photoCard.querySelector('#camInput').onchange = (e)=> handleFile(e.target.files[0]);
-  photoCard.querySelector('#galInput').onchange = (e)=> handleFile(e.target.files[0]);
 
   metaCard.querySelector('#parseMetaBtn').onclick = ()=>{
     const text = metaCard.querySelector('#metaPaste').value;
@@ -691,7 +557,7 @@ function renderNutricion(body){
     if(parsed.sodium!=null) form.querySelector('#f_sod').value = parsed.sodium;
     if(parsed.sugar!=null) form.querySelector('#f_sug').value = parsed.sugar;
     form.querySelector('#f_name').style.borderColor = 'var(--line)';
-    statusEl.textContent = '✔ Campos llenos. Revísalos y dale "Agregar alimento" abajo.' + (parsed.confidence? ' (Meta AI reportó confianza: '+parsed.confidence+')' : '');
+    statusEl.textContent = 'Campos listos. Revísalos y dale "Agregar alimento" abajo.' + (parsed.confidence? ' (Meta AI reportó confianza: '+parsed.confidence+')' : '');
   };
 
   form.querySelector('#addFoodBtn').onclick = async ()=>{
@@ -779,7 +645,7 @@ async function connectHeartRateBLE(bpmEl, statusEl){
 
 function renderGPSCard(date, log){
   const card = el(`<div class="card">
-    <h3>📍 Grabar actividad con GPS</h3>
+    <h3>Grabar actividad con GPS</h3>
     <p class="note">Llévate el celular contigo — dibuja tu recorrido en el mapa y calcula distancia y ritmo en vivo. Necesita permiso de ubicación, y funciona mientras la pestaña esté abierta y la pantalla encendida (no en segundo plano, como cualquier navegador). Pruébalo desde el link publicado en tu celular, no aquí en el chat.</p>
     <label>Tipo de actividad</label>
     <select id="gps_type">${['Running','Caminata','Ciclismo','Trail','Natación'].map(o=>`<option>${o}</option>`).join('')}</select>
@@ -788,7 +654,7 @@ function renderGPSCard(date, log){
       <div><div class="note">DISTANCIA</div><div class="score-num" style="font-size:24px" id="gps_dist">0.00 km</div></div>
       <div><div class="note">RITMO</div><div class="score-num" style="font-size:24px" id="gps_pace">--:--</div></div>
     </div>
-    <p class="note" style="margin-top:8px">❤️ <span id="gps_bpm">--</span> lpm &nbsp; <button class="ghost" id="gps_ble_btn" style="padding:4px 10px;font-size:11px;">🔗 Conectar monitor Bluetooth (opcional)</button></p>
+    <p class="note" style="margin-top:8px"><span id="gps_bpm">--</span> lpm &nbsp; <button class="ghost" id="gps_ble_btn" style="padding:4px 10px;font-size:11px;">Conectar monitor Bluetooth (opcional)</button></p>
     <p class="note" id="gps_ble_status"></p>
     <div id="gps_map" class="gps-map"></div>
     <div style="display:flex;gap:10px;margin-top:10px">
@@ -951,7 +817,7 @@ function renderEntrenamiento(body){
   const list = el(`<div class="card">
     <h3>Entrenamientos de hoy</h3>
     ${(log.training||[]).length ? `<table><tr><th>Tipo</th><th>Min</th><th>Int.</th><th>Kcal</th><th>Dist.</th><th></th><th></th></tr>
-      ${log.training.map((tr,i)=>`<tr><td>${tr.type}</td><td>${tr.duration}</td><td>${tr.intensity}</td><td>${tr.calBurn||'-'}</td><td>${tr.distanceKm?tr.distanceKm+' km':'-'}</td><td>${tr.route&&tr.route.length>1?`<button class="ghost" data-map-idx="${i}" style="padding:3px 8px;font-size:10px">🗺️</button>`:''}</td><td><button class="danger" data-idx="${i}">✕</button></td></tr>`).join('')}
+      ${log.training.map((tr,i)=>`<tr><td>${tr.type}</td><td>${tr.duration}</td><td>${tr.intensity}</td><td>${tr.calBurn||'-'}</td><td>${tr.distanceKm?tr.distanceKm+' km':'-'}</td><td>${tr.route&&tr.route.length>1?`<button class="ghost" data-map-idx="${i}" style="padding:3px 8px;font-size:10px">Mapa</button>`:''}</td><td><button class="danger" data-idx="${i}">✕</button></td></tr>`).join('')}
     </table><div id="routeViewer"></div>` : '<p class="empty">Aún no registras entrenamiento hoy.</p>'}
   </div>`);
 
@@ -1134,7 +1000,7 @@ function renderPerfil(body){
   const p = STATE.profile || {age:'',sex:'M',weight:'',height:'',bodyFat:'',activity:'moderado',goal:'mantener',sport:'hibrido'};
 
   const themeCard = el(`<div class="card">
-    <h3>🎨 Personalización de colores</h3>
+    <h3>Personalización de colores</h3>
     <p class="note">Elige una paleta o crea la tuya con los selectores de color.</p>
     <div class="swatch-row" id="presetRow"></div>
     <div class="grid3">
@@ -1207,7 +1073,7 @@ function renderPerfil(body){
   const auto = STATE.profile ? autoTargets() : DEFAULT_TARGETS;
   const cur = targets();
   const targetsCard = el(`<div class="card">
-    <h3>🎯 Objetivos de macros (editables)</h3>
+    <h3>Objetivos de macros (editables)</h3>
     <p class="note">Por defecto se calculan automáticamente. Puedes sobreescribir cualquier valor aquí; se guardará como tu objetivo personalizado.</p>
     <div class="grid3">
       <div><label>Calorías</label><input id="tg_cal" type="number" value="${cur.calories}"></div>
@@ -1226,18 +1092,18 @@ function renderPerfil(body){
   </div>`);
 
   const voiceCard = el(`<div class="card">
-    <h3>🎤 Comando de voz</h3>
-    <p class="note">Toca el botón flotante 🎤 (abajo a la derecha) y di, por ejemplo, "abre nutrición", "abre entrenamiento", "abre calendario", "abre progreso" o "abre dashboard" para saltar de pestaña sin usar las manos. Funciona en Chrome (escritorio y Android).</p>
+    <h3>Comando de voz</h3>
+    <p class="note">Toca el botón flotante (abajo a la derecha) y di, por ejemplo, "abre nutrición", "abre entrenamiento", "abre calendario", "abre progreso" o "abre dashboard" para saltar de pestaña sin usar las manos. Funciona en Chrome (escritorio y Android).</p>
     <p class="note"><strong>Para decirlo desde fuera de la app</strong> (ej. "Oye Siri, abre HybridAI" o "Ok Google, abre HybridAI") necesitas: 1) Agregar esta página a tu pantalla de inicio (Compartir → Agregar a inicio), y 2) crear un Atajo de Siri o una Acción de Google Assistant que abra esa URL — eso se configura desde el teléfono, no desde aquí, porque un sitio web no puede registrarse como comando de voz del sistema operativo.</p>
   </div>`);
 
   const shareCard = el(`<div class="card">
-    <h3>📲 Anclar a WhatsApp</h3>
+    <h3>Anclar a WhatsApp</h3>
     <p class="note">El botón "WhatsApp" en la parte superior abre un chat con un link directo a esta app. Para que el link funcione siempre igual (incluso mañana), lo ideal es descargar este archivo HTML y subirlo a un hosting gratuito (GitHub Pages, Netlify, Vercel) para tener una URL fija — desde este chat la vista previa puede cambiar de dirección. Si quieres, te ayudo a dejarlo listo para subir a GitHub Pages.</p>
   </div>`);
 
   const prefsCard = el(`<div class="card">
-    <h3>🔔 Preferencias</h3>
+    <h3>Preferencias</h3>
     <label style="display:flex;align-items:center;gap:10px;margin-top:6px;cursor:pointer;">
       <input type="checkbox" id="pref_quotes" style="width:18px;height:18px;" ${STATE.settings.showQuotes?'checked':''}>
       <span style="text-transform:none;font-size:13px;color:var(--text);">Mostrar frase del día (bíblica/motivacional) en el Dashboard</span>
